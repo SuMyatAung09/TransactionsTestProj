@@ -1,0 +1,186 @@
+﻿@page "/TransactionInfo"
+@using System.IO;
+@using CsvHelper;
+@using System.Globalization;
+@using Microsoft.AspNetCore.Http;
+@using System.Collections.Generic;
+@using System.Text.RegularExpressions;
+@inject NavigationManager uriHelper;
+@using System.Threading;
+@using TransactionsTestProj;
+@using Syncfusion.Blazor.Inputs;
+@using Syncfusion.Blazor.Popups;
+@using MatBlazor;
+
+@code {
+
+    [Inject]
+    DBContext Context { get; set; }
+
+    private SfUploader sfUploader;
+    public List<UploadFiles>
+        UploadFiles
+    { get; set; }
+    public int StatusCode { get; set; } = StatusCodes.Status400BadRequest;
+    private SfDialog SfDialog;
+    private bool IsEnabled { get; set; } = true;
+    private bool IsVisible { get; set; } = false;
+    private bool IsDisableUploadbtn { get; set; } = true;
+    public class file
+    {
+        public string Country { get; set; }
+        public string TargetingCode { get; set; }
+        public string ClassDescription { get; set; }
+        public int PriorityRank { get; set; }
+        public int IsOccupiedPS { get; set; }
+        public int IsOccupiedLD { get; set; }
+    }
+
+    private const string tempDirectory = "wwwroot/adBannerUploadFile";
+    public string selectedText { get; set; }
+    public string csvFileName { get; set; }
+    protected override void OnInitialized()
+    {
+        // Top.SetTitle("AdBanner Management");
+        this.IsDisableUploadbtn = true;
+    }
+
+    private async Task OnImportAsync(UploadChangeEventArgs args)
+    {
+        await Task.Delay(0);
+        try
+        {
+            var file = args.Files.LastOrDefault();
+            if (Directory.Exists(tempDirectory))
+            {
+                Directory.Delete(tempDirectory, true);
+                Directory.CreateDirectory(tempDirectory);
+            }
+            else
+            {
+                Directory.CreateDirectory(tempDirectory);
+            }
+            string questionnairePath = $"{tempDirectory}/{file.FileInfo.Name}";
+            var path = file.FileInfo.Name;
+            var fileExtension = Path.GetExtension(path);
+            if (fileExtension == ".csv")
+            {
+                //Top.Toast.Processing("Browse in process, please wait...");
+                this.StateHasChanged();
+                using var filestream = new FileStream(questionnairePath, FileMode.Create, FileAccess.Write);
+                file.Stream.WriteTo(filestream);
+                filestream.Close();
+                file.Stream.Close();
+                selectedText = "Selected File:";
+                csvFileName = file.FileInfo.Name;
+                // Top.Toast.Success("Process complete!");
+                this.IsDisableUploadbtn = false;
+                this.StateHasChanged();
+            }
+            else
+            {
+                selectedText = "Selected File:";
+                csvFileName = file.FileInfo.Name;
+                //Top.Toast.Danger("Only .csv file is allowed to upload.", Category);
+                Directory.Delete(tempDirectory, true);
+                this.StateHasChanged();
+                this.IsEnabled = true;
+                this.IsDisableUploadbtn = true;
+                this.StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            //Top.Toast.Error(ex.Message, Category);
+        }
+    }
+
+    private void OpenDialog()
+    {
+        this.IsVisible = true;
+    }
+
+    private void CloseDialog()
+    {
+        this.IsVisible = false;
+    }
+
+    private async Task OnUploadAsync()
+    {
+        await this.SfDialog.Hide();
+        this.IsDisableUploadbtn = true;
+        this.StateHasChanged();
+        //Top.Toast.Processing("Upload in process, please wait...");
+        //  await base.OnUploadAsync();
+        this.IsEnabled = true;
+        //NavigationManager.NavigateTo("/adbanner");
+        // this.Top.SelectedTab = 0;
+        this.StateHasChanged();
+    }
+
+}
+
+<div class="row">
+    @*<InfoBar InfoMessage1="Only a .csv file is allowed to be uploaded."
+                 InfoMessage2="The upload processing will be taken for a few mins.">
+        </InfoBar>*@
+</div>
+<div class="row">
+    <SfUploader @ref="sfUploader" ID="UploadFiles" AutoUpload="true" ShowFileList="false" Multiple="false" AllowedExtensions=".csv" Enabled="@IsEnabled">
+        <UploaderEvents ValueChange="OnImportAsync"></UploaderEvents>
+    </SfUploader>
+</div>
+<div class="row">
+    <span STYLE="font-size:10px"><b>@selectedText</b> @csvFileName</span><br /><br />
+</div>
+<div class="row">
+    <MatButton Id="btnUpload" Icon="upload"
+               OnClick="OpenDialog"
+               Class="text-light mdc-button mdc-button--raised mdc-button--leading" Disabled="@IsDisableUploadbtn">Upload</MatButton>
+
+</div>
+
+<SfDialog @ref="SfDialog" ID="dialog" ShowCloseIcon="false" IsModal="true" @bind-Visible="@IsVisible">
+    <DialogTemplates>
+        <Header> <div id="dialog-7377141d-ff13-4498-af23-33056e07ed21_title" class="e-dlg-header">Confirm Upload</div></Header>
+        <Content>
+            <div id="dialog-7377141d-ff13-4498-af23-33056e07ed21_dialog-content" class="e-dlg-content">
+                <div class="row">
+                    <div class="col-3 pr-0 text-right">
+                        <img src="images/icon/warning.png" width="65">
+                    </div>
+                    <div class="col-9 my-auto">
+                        <div class="mb-2">Are you sure to Upload the csv file data?</div>
+                        <b></b>
+                    </div>
+                </div>
+            </div>
+        </Content>
+    </DialogTemplates>
+    <DialogButtons>
+        <DialogButton Content="Proceed" IsPrimary="true" OnClick="@OnUploadAsync" />
+        <DialogButton Content="Cancel" IsPrimary="false" OnClick="@CloseDialog" />
+    </DialogButtons>
+    <button class="btn bg-gradient-danger" @onclick="OnUploadAsync">Upload</button>
+    <button class="btn bg-gradient-gray" @onclick="Clear">Clear</button>
+</SfDialog>
+<style>
+
+    #template {
+        display: inline-block;
+        padding: 0px 10px;
+        vertical-align: middle;
+        height: 40px;
+        line-height: 40px;
+        background-color: powderblue;
+    }
+
+    #dialog {
+        z-index: 1001;
+        width: 330px;
+        height: 230px;
+        left: 0px;
+        top: 0px;
+        position: relative;
+    }
+</style>
