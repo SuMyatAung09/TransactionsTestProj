@@ -25,6 +25,9 @@
 
     [Inject]
     DBContext Context { get; set; }
+    [CascadingParameter]
+    public MainLayout Top { get; set; }
+    protected string Category { get; set; }
     private SfUploader sfUploader;
     public List<UploadFiles>
         UploadFiles
@@ -72,7 +75,7 @@
             var fileExtension = Path.GetExtension(path);
             if (fileExtension == ".csv")
             {
-                //Top.Toast.Processing("Browse in process, please wait...");
+                Top.Toast.Processing("Browse in process, please wait...");
                 this.StateHasChanged();
                 using var filestream = new FileStream(questionnairePath, FileMode.Create, FileAccess.Write);
                 file.Stream.WriteTo(filestream);
@@ -80,7 +83,7 @@
                 file.Stream.Close();
                 selectedText = "Selected File:";
                 csvFileName = file.FileInfo.Name;
-                // Top.Toast.Success("Process complete!");
+                Top.Toast.Success("Process complete!");
                 this.IsDisableUploadbtn = false;
                 this.StateHasChanged();
             }
@@ -121,7 +124,6 @@
             {
                 selectedText = "Selected File:";
                 csvFileName = file.FileInfo.Name;
-                //Top.Toast.Danger("Only .csv file is allowed to upload.", Category);
                 Directory.Delete(tempDirectory, true);
                 this.StateHasChanged();
                 this.IsEnabled = true;
@@ -129,9 +131,9 @@
                 this.StateHasChanged();
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            //Top.Toast.Error(ex.Message, Category);
+            Top.Toast.Error(ex.Message, Category);
         }
     }
 
@@ -150,11 +152,9 @@
         await this.SfDialog.Hide();
         this.IsDisableUploadbtn = true;
         this.StateHasChanged();
-        //Top.Toast.Processing("Upload in process, please wait...");
+        Top.Toast.Processing("Upload in process, please wait...");
         await UploadAsync();
         this.IsEnabled = true;
-        //NavigationManager.NavigateTo("/adbanner");
-        // this.Top.SelectedTab = 0;
         this.StateHasChanged();
     }
 
@@ -190,7 +190,6 @@
                                 entity.TransactionDate = DateTime.UtcNow;
                                 Context.Transactions.Add(entity);
                                 await Context.SaveChangesAsync();
-
                             }
                             Context.SaveChanges();
                         }

@@ -1,5 +1,8 @@
-﻿@inherits LayoutComponentBase
+﻿@using TransactionWeb.Components
+@inherits LayoutComponentBase;
 
+
+<Toast @ref="@Toast"></Toast>
 <div class="page">
     <div class="sidebar">
         <NavMenu />
@@ -15,3 +18,7 @@
         </div>
     </div>
 </div>
+
+@code {
+    public Toast Toast { get; set; }
+}
